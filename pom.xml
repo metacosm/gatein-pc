@@ -372,6 +372,7 @@
       <module>federation</module>
       <module>management</module>
       <module>samples</module>
+      <module>rest</module>
    </modules>
 
 </project>

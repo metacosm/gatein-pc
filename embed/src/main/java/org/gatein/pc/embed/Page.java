@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
-class Page
+public class Page
 {
 
    /** . */
@@ -148,5 +148,10 @@ class Page
          }
       }
       return consumers == null ? Collections.<Window>emptyList() : consumers;
+   }
+
+   public int getNumberOfWindows()
+   {
+      return windows.size();
    }
 }
