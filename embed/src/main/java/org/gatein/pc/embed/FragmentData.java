@@ -28,7 +28,7 @@ import java.util.List;
 /** @author <a href="mailto:chris.laprun@jboss.com">Chris Laprun</a> */
 public class FragmentData
 {
-   // Accessors are required potential data binding
+   // Accessors are required for potential data binding, proper support for properties in Java would be nice here :)
 
    String body;
    Head head = new Head();
