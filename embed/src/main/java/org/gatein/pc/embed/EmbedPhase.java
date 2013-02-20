@@ -74,10 +74,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
-abstract class EmbedPhase
+public abstract class EmbedPhase
 {
 
    /** . */
@@ -104,9 +103,9 @@ abstract class EmbedPhase
       this.resp = resp;
    }
 
-   static class Render extends EmbedPhase
+   public static class Render extends EmbedPhase
    {
-      Render(Page page, PortletInvoker invoker, HashMap<String, String[]> parameters, HttpServletRequest req, HttpServletResponse resp)
+      protected Render(Page page, PortletInvoker invoker, HashMap<String, String[]> parameters, HttpServletRequest req, HttpServletResponse resp)
       {
          super(page, invoker, parameters, req, resp);
       }
@@ -114,21 +113,16 @@ abstract class EmbedPhase
       @Override
       void invoke() throws IOException, ServletException
       {
-         //
-         StringBuilder body = new StringBuilder();
-         body.append("<body>\n");
-         body.append("<ul>\n");
-
-         //
-         StringBuilder head = new StringBuilder();
-         head.append("<head>\n");
+         preInvoke();
 
          //
          SimpleMultiValuedPropertyMap<String> httpHeaders = new SimpleMultiValuedPropertyMap<String>();
          ArrayList<Cookie> cookies = new ArrayList<Cookie>();
 
          //
-         for (Window window : page.windows.values())
+         final Collection<Window> windows = page.windows.values();
+         final List<FragmentData> fragments = new ArrayList<FragmentData>(windows.size());
+         for (Window window : windows)
          {
             RenderInvocation render = new RenderInvocation(new EmbedInvocationContext(page, window, req, resp));
 
@@ -166,13 +160,14 @@ abstract class EmbedPhase
             }
             else if (response instanceof FragmentResponse)
             {
-               FragmentResponse fragment = (FragmentResponse)response;
-               body.append("<li>");
-               body.append(fragment.getContent(UTF_8));
-               body.append("</li>\n");
+               FragmentResponse fragmentResponse = (FragmentResponse)response;
+               FragmentData fragment = new FragmentData();
+               fragments.add(fragment);
+
+               fragment.body = fragmentResponse.getContent(UTF_8);
 
                //
-               ResponseProperties props = fragment.getProperties();
+               ResponseProperties props = fragmentResponse.getProperties();
                if (props != null)
                {
                   if (props.getCookies() != null)
@@ -198,43 +193,42 @@ abstract class EmbedPhase
                            String name = element.getTagName().toLowerCase();
                            if ("title".equals(name))
                            {
-                              head.append("<title>");
-                              appendText(element, head);
-                              head.append("</title>");
+                              fragment.head.title = encodeIfNeeded(element.getTextContent());
                            }
                            else if ("link".equals(name))
                            {
-                              head.append("<link");
-                              appendAttribute(element, "charset", head);
-                              appendAttribute(element, "href", head);
-                              appendAttribute(element, "media", head);
-                              appendAttribute(element, "rel", head);
-                              appendAttribute(element, "type", head);
-                              head.append("/>");
+                              final FragmentData.Head.Link link = new FragmentData.Head.Link();
+                              link.charset = element.getAttribute("charset");
+                              link.href = element.getAttribute("href");
+                              link.media = element.getAttribute("media");
+                              link.rel = element.getAttribute("rel");
+                              link.type = element.getAttribute("type");
+                              fragment.head.addLink(link);
                            }
                            else if ("meta".equals(name))
                            {
-                              head.append("<meta");
-                              appendAttribute(element, "http-equiv", head);
-                              appendAttribute(element, "name", head);
-                              appendAttribute(element, "content", head);
-                              head.append("/>");
+                              final FragmentData.Head.Meta meta = new FragmentData.Head.Meta();
+                              meta.http_equiv = element.getAttribute("http-equiv");
+                              meta.name = element.getAttribute("name");
+                              meta.content = element.getAttribute("content");
+                              meta.charset = element.getAttribute("charset");
+                              fragment.head.addMeta(meta);
                            }
                            else if ("script".equals(name))
                            {
-                              head.append("<script");
-                              appendAttribute(element, "type", head);
-                              appendAttribute(element, "src", head);
-                              head.append("></script>");
+                              final FragmentData.Head.Script script = new FragmentData.Head.Script();
+                              script.src = element.getAttribute("src");
+                              script.type = element.getAttribute("type");
+                              script.text = encodeIfNeeded(element.getTextContent());
+                              fragment.head.addScript(script);
                            }
                            else if ("style".equals(name))
                            {
-                              head.append("<style");
-                              appendAttribute(element, "type", head);
-                              appendAttribute(element, "media", head);
-                              head.append(">");
-                              appendText(element, head);
-                              head.append("</style>");
+                              final FragmentData.Head.Style style = new FragmentData.Head.Style();
+                              style.media = element.getAttribute("media");
+                              style.type = element.getAttribute("type");
+                              style.text = encodeIfNeeded(element.getTextContent());
+                              fragment.head.addStyle(style);
                            }
                         }
                      }
@@ -244,15 +238,8 @@ abstract class EmbedPhase
          }
 
          //
-         body.append("</ul>\n");
-         body.append("</body>\n");
-
-         //
-         head.append("</head>");
-
-         //
          resp.setStatus(200);
-         resp.setContentType("text/html;charset=utf-8");
+         setContentType();
 
          //
          sendHttpHeaders(httpHeaders, resp);
@@ -260,12 +247,150 @@ abstract class EmbedPhase
 
          //
          PrintWriter writer = resp.getWriter();
+         outputResponse(fragments, writer);
+         writer.close();
+
+         postInvoke();
+      }
+
+      protected String encodeIfNeeded(String text)
+      {
+         // do nothing by default
+         return text;
+      }
+
+      protected void preInvoke()
+      {
+         // nothing to do
+      }
+
+      protected void postInvoke()
+      {
+         // nothing to do
+      }
+
+      protected void outputResponse(List<FragmentData> fragments, PrintWriter writer)
+      {
+
+         StringBuilder head = new StringBuilder();
+         StringBuilder body = new StringBuilder();
+         int index = 0;
+         final int size = fragments.size();
+         for (FragmentData fragment : fragments)
+         {
+            appendFragment(fragment, body, index++, size);
+            appendTitle(fragment.head, head);
+
+            for (FragmentData.Head.Link link : fragment.head.links)
+            {
+               appendLink(link, head);
+            }
+            for (FragmentData.Head.Meta meta : fragment.head.metas)
+            {
+               appendMeta(meta, head);
+            }
+            for (FragmentData.Head.Script script : fragment.head.scripts)
+            {
+               appendScript(script, head);
+            }
+            for (FragmentData.Head.Style style : fragment.head.styles)
+            {
+               appendStyle(style, head);
+            }
+         }
+
+
          writer.append("<!DOCTYPE html>\n");
          writer.append("<html>\n");
+
+         writer.append("<head>\n");
          writer.append(head);
+         head.append("</head>\n");
+
+         writer.append("<body>\n");
          writer.append(body);
-         writer.append("</html>\n");
-         writer.close();
+         writer.append("</body>\n");
+
+         writer.append("</html>");
+      }
+
+      protected void setContentType()
+      {
+         resp.setContentType("text/html;charset=utf-8");
+      }
+
+
+      private void appendStyle(FragmentData.Head.Style style, StringBuilder head)
+      {
+         head.append("<style");
+         appendAttribute("type", style.type, head);
+         appendAttribute("media", style.media, head);
+         head.append(">");
+         head.append(style.text);
+         head.append("</style>\n");
+      }
+
+      private void appendScript(FragmentData.Head.Script script, StringBuilder head)
+      {
+         head.append("<script");
+         appendAttribute("type", script.type, head);
+         appendAttribute("src", script.src, head);
+         head.append(">");
+         head.append(script.text);
+         head.append("</script>\n");
+      }
+
+      private void appendMeta(FragmentData.Head.Meta meta, StringBuilder head)
+      {
+         head.append("<meta");
+         appendAttribute("http-equiv", meta.http_equiv, head);
+         appendAttribute("name", meta.name, head);
+         appendAttribute("content", meta.content, head);
+         appendAttribute("charset", meta.charset, head);
+         head.append("/>\n");
+      }
+
+      private void appendLink(FragmentData.Head.Link link, StringBuilder head)
+      {
+         head.append("<link");
+         appendAttribute("charset", link.charset, head);
+         appendAttribute("href", link.href, head);
+         appendAttribute("media", link.media, head);
+         appendAttribute("rel", link.rel, head);
+         appendAttribute("type", link.type, head);
+         head.append("/>\n");
+      }
+
+      private void appendTitle(FragmentData.Head header, StringBuilder head)
+      {
+         head.append("<title>");
+         head.append(header.title);
+         head.append("</title>\n");
+      }
+
+      /**
+       * Append the portlet markup associated with the specified FragmentData to the body part of the response markup. We provide the fragment index and total fragment number to
+       * afford the opportunity to do some minimal layout.
+       *
+       * @param fragment
+       * @param body
+       * @param fragmentIndex
+       * @param totalFragmentNumber
+       */
+      protected void appendFragment(FragmentData fragment, StringBuilder body, int fragmentIndex, int totalFragmentNumber)
+      {
+         boolean first = fragmentIndex == 0;
+         if (first)
+         {
+            body.append("<ul>\n");
+         }
+         body.append("<li>");
+         body.append(fragment.body);
+         body.append("</li>\n");
+         if (first)
+         {
+            body.append("</ul>\n");
+         }
       }
    }
 
@@ -346,7 +471,7 @@ abstract class EmbedPhase
             //
             for (UpdateNavigationalStateResponse.Event producedEvent : update.getEvents())
             {
-               Collection<Window> consumers = page.getConsumers (producedEvent.getName());
+               Collection<Window> consumers = page.getConsumers(producedEvent.getName());
                for (Window consumer : consumers)
                {
                   Event event = new Event(
@@ -655,7 +780,7 @@ abstract class EmbedPhase
    private static final URLFormat URL_FORMAT = new URLFormat(null, null, null, false);
 
    /** . */
-   private static final Charset UTF_8 = Charset.forName("UTF-8");
+   protected static final Charset UTF_8 = Charset.forName("UTF-8");
 
    private static ServletException createException(Window window, ErrorResponse response)
    {
@@ -707,7 +832,7 @@ abstract class EmbedPhase
    private static void appendAttribute(Element element, String name, StringBuilder to)
    {
       NamedNodeMap attributes = element.getAttributes();
-      for (int i = 0;i < attributes.getLength();i++)
+      for (int i = 0; i < attributes.getLength(); i++)
       {
          Attr attribute = (Attr)attributes.item(i);
          if (attribute.getName().toLowerCase().equals(name))
@@ -715,11 +840,16 @@ abstract class EmbedPhase
             String value = attribute.getValue();
             if (value.length() > 0)
             {
-               to.append(" ").append(name).append(" =\"").append(value).append("\"");
+               appendAttribute(name, value, to);
             }
             break;
          }
       }
+   }
+
+   private static void appendAttribute(String name, String value, StringBuilder to)
+   {
+      to.append(" ").append(name).append(" =\"").append(value).append("\"");
    }
 
    private static void appendText(Node node, StringBuilder to)
