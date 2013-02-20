@@ -155,7 +155,7 @@ public class EmbedServlet extends HttpServlet
          {
             if ("render".equalsIgnoreCase(phaseParam[0]))
             {
-               phase = new EmbedPhase.Render(page, invoker, parameters, req, resp);
+               phase = getRenderPhase(page, invoker, parameters, req, resp);
             }
             else if ("action".equalsIgnoreCase(phaseParam[0]))
             {
@@ -172,7 +172,7 @@ public class EmbedServlet extends HttpServlet
          }
          else
          {
-            phase = new EmbedPhase.Render(page, invoker, parameters, req, resp);
+            phase = getRenderPhase(page, invoker, parameters, req, resp);
          }
 
          // Decode invocation
@@ -211,6 +211,11 @@ public class EmbedServlet extends HttpServlet
 //            }
 //         }
       }
+   }
+
+   protected EmbedPhase.Render getRenderPhase(Page page, PortletInvoker invoker, HashMap<String, String[]> parameters, HttpServletRequest req, HttpServletResponse resp)
+   {
+      return new EmbedPhase.Render(page, invoker, parameters, req, resp);
    }
 
    @Override
