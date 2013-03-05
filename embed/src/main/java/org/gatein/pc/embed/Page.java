@@ -60,59 +60,66 @@ public class Page
       {
          Segment segments = (Segment)Chunk.parse(s);
 
-         // Skip context path
-         segments = (Segment)segments.next;
-
-         // Servlet parameter
-         parameters = segments.parameters != null ? segments.parameters : new HashMap<String, String[]>();
-
-         //
-         for (Segment segment : (Segment)segments.next)
+         if (segments.size() > 1)
          {
-            Portlet found = null;
-            if (invoker != null)
+            // Skip context path
+            segments = (Segment)segments.next;
+
+            // Servlet parameter
+            parameters = segments.parameters != null ? segments.parameters : new HashMap<String, String[]>();
+
+            //
+            for (Segment segment : (Segment)segments.next)
             {
-               try
+               Portlet found = null;
+               if (invoker != null)
                {
-                  for (Portlet portlet : invoker.getPortlets())
+                  try
                   {
-                     if (portlet.getInfo().getName().equals(segment.value))
+                     for (Portlet portlet : invoker.getPortlets())
                      {
-                        found = portlet;
-                        break;
+                        if (portlet.getInfo().getName().equals(segment.value))
+                        {
+                           found = portlet;
+                           break;
+                        }
                      }
                   }
+                  catch (PortletInvokerException e)
+                  {
+                     // ?
+                  }
                }
-               catch (PortletInvokerException e)
+
+               //
+               LinkedHashMap<String, String[]> windowParameters;
+               Mode windowMode;
+               WindowState windowState;
+               if (segment.parameters != null)
                {
-                  // ?
+                  windowParameters = new LinkedHashMap<String, String[]>(segment.parameters);
+                  String[] modeParameter = windowParameters.remove("javax.portlet.portlet_mode");
+                  String[] windowStateParameter = windowParameters.remove("javax.portlet.window_state");
+                  windowMode = modeParameter != null ? Mode.create(modeParameter[0]) : null;
+                  windowState = windowStateParameter != null ? WindowState.create(windowStateParameter[0]) : null;
                }
-            }
+               else
+               {
+                  windowParameters = null;
+                  windowMode = null;
+                  windowState = null;
+               }
 
-            //
-            LinkedHashMap<String, String[]> windowParameters;
-            Mode windowMode;
-            WindowState windowState;
-            if (segment.parameters != null)
-            {
-               windowParameters = new LinkedHashMap<String, String[]>(segment.parameters);
-               String[] modeParameter = windowParameters.remove("javax.portlet.portlet_mode");
-               String[] windowStateParameter = windowParameters.remove("javax.portlet.window_state");
-               windowMode = modeParameter != null ? Mode.create(modeParameter[0]) : null;
-               windowState = windowStateParameter != null ? WindowState.create(windowStateParameter[0]) : null;
-            }
-            else
-            {
-               windowParameters = null;
-               windowMode = null;
-               windowState = null;
-            }
+               //
+               Window context = new Window("" + count++, found, segment.value, windowMode, windowState, windowParameters);
 
-            //
-            Window context = new Window("" + count++, found, segment.value, windowMode, windowState, windowParameters);
-
-            //
-            windows.put(context.id, context);
+               //
+               windows.put(context.id, context);
+            }
+         }
+         else
+         {
+            parameters = new HashMap<String, String[]>();
          }
       }
 
