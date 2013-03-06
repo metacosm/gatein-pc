@@ -48,7 +48,7 @@ class Query extends Chunk
    @Override
    protected void writeTo(StringBuilder sb, String amp)
    {
-      if (parameters.size() > 0)
+      if (parameters != null && !parameters.isEmpty())
       {
          String previous = "?";
          for (Map.Entry<String, String[]> parameter : parameters.entrySet())
