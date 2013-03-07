@@ -23,15 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** @author <a href="mailto:julien.viet@exoplatform.com">Julien Viet</a> */
-class Query extends Chunk
+class Query extends Segment
 {
-
-   /** . */
-   final Map<String, String[]> parameters;
 
    Query(Map<String, String[]> parameters)
    {
-      this.parameters = parameters;
+      super(null, parameters, null);
    }
 
    Query()
