@@ -50,6 +50,24 @@
          <groupId>javax.servlet</groupId>
          <artifactId>javax.servlet-api</artifactId>
       </dependency>
+
+      <!-- Added for Google portlet assembly -->
+      <dependency>
+         <groupId>org.gatein.pc</groupId>
+         <artifactId>pc-api</artifactId>
+      </dependency>
+      <dependency>
+         <groupId>org.gatein.pc</groupId>
+         <artifactId>pc-embed</artifactId>
+      </dependency>
+      <dependency>
+         <groupId>org.gatein.pc</groupId>
+         <artifactId>pc-rest</artifactId>
+      </dependency>
+      <dependency>
+         <groupId>org.staxnav</groupId>
+         <artifactId>staxnav.core</artifactId>
+      </dependency>
    </dependencies>
 
    <build>
@@ -67,6 +85,11 @@
                   <descriptor>src/assemble/samples-jsp-portlet.xml</descriptor>
                   <descriptor>src/assemble/samples-eventdebug-portlet.xml</descriptor>
                </descriptors>
+               <archive>
+                  <manifestEntries>
+                     <Dependencies>org.codehaus.jackson.jackson-mapper-asl</Dependencies>
+                  </manifestEntries>
+               </archive>
             </configuration>
             <executions>
                <execution>
