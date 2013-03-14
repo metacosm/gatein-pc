@@ -28,8 +28,6 @@ import org.gatein.pc.embed.EmbedPhase;
 import org.gatein.pc.embed.EmbedServlet;
 import org.gatein.pc.embed.FragmentData;
 import org.gatein.pc.embed.Page;
-import org.owasp.esapi.Encoder;
-import org.owasp.esapi.reference.DefaultEncoder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,7 +45,7 @@ public class RESTServlet extends EmbedServlet
 {
 
    private final ObjectMapper mapper = new ObjectMapper(); // ObjectMapper is thread-safe for use, but configuring it is not
-   private final Encoder encoder = DefaultEncoder.getInstance();
+//   private final Encoder encoder = DefaultEncoder.getInstance();
 
    @Override
    protected EmbedPhase.Render getRenderPhase(Page page, PortletInvoker invoker, HashMap<String, String[]> parameters, HttpServletRequest req, HttpServletResponse resp)
@@ -98,7 +96,8 @@ public class RESTServlet extends EmbedServlet
       @Override
       protected String encodeIfNeeded(String text)
       {
-         return text != null ? encoder.encodeForJavaScript(text) : text;
+//         return text != null ? encoder.encodeForJavaScript(text) : text;
+         return text;
       }
    }
 }
