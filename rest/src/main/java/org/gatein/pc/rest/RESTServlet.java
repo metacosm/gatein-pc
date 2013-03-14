@@ -31,7 +31,6 @@ import org.gatein.pc.embed.Page;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
@@ -72,14 +71,17 @@ public class RESTServlet extends EmbedServlet
       @Override
       protected void outputResponse(List<FragmentData> fragments, PrintWriter writer)
       {
+
          try
          {
-            // there should only be one FragmentData as guarded by preInvoke
-            final FragmentData data = fragments.get(0);
-
-            mapper.writeValue(writer, data);
+            if (fragments != null && !fragments.isEmpty())
+            {
+               // there should only be one FragmentData as guarded by preInvoke
+               final FragmentData data = fragments.get(0);
+               mapper.writeValue(writer, data);
+            }
          }
-         catch (IOException e)
+         catch (Exception e)
          {
             throw new RuntimeException("Couldn't output JSON.", e);
          }
