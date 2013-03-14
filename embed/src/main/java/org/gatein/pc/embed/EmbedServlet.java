@@ -128,7 +128,7 @@ public class EmbedServlet extends HttpServlet
       HashMap<String, String[]> parameters = new HashMap<String, String[]>(req.getParameterMap());
 
       // Parse page
-      Page page = new Page(invoker, req.getRequestURI());
+      Page page = new Page(invoker, req.getRequestURI(), parameters);
 
       // Validate page
       Window notFound = null;

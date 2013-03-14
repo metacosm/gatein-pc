@@ -45,14 +45,14 @@ public class Page
    /** . */
    final LinkedHashMap<String, Window> windows;
 
-   Page(PortletInvoker invoker, String s) throws ServletException
+   Page(PortletInvoker invoker, String s, Map<String, String[]> parameters) throws ServletException
    {
       LinkedHashMap<String, Window> windows = new LinkedHashMap<String, Window>();
       int count = 0;
-      Map<String, String[]> parameters;
+//      Map<String, String[]> parameters;
 
       //
-      if (s == null ||  s.length() == 0 || (s.length() == 1 && s.charAt(0) == '/'))
+      if (s == null || s.length() == 0 || (s.length() == 1 && s.charAt(0) == '/'))
       {
          parameters = new HashMap<String, String[]>();
       }
@@ -66,10 +66,10 @@ public class Page
             segments = (Segment)segments.next;
 
             // Servlet parameter
-            parameters = segments.parameters != null ? segments.parameters : new HashMap<String, String[]>();
+//            parameters = segments.parameters != null ? segments.parameters : new HashMap<String, String[]>();
 
             //
-            for (Segment segment : (Segment)segments.next)
+            for (Segment segment : segments)
             {
                // only process segment as a window if it's not a Query
                if (!(segment instanceof Query))
