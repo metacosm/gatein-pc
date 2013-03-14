@@ -142,6 +142,16 @@
          </dependency>
          <dependency>
             <groupId>org.gatein.pc</groupId>
+            <artifactId>pc-embed</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.gatein.pc</groupId>
+            <artifactId>pc-rest</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.gatein.pc</groupId>
             <artifactId>pc-test-core</artifactId>
             <version>${project.version}</version>
          </dependency>
